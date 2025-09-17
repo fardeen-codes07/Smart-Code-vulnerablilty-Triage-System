@@ -1,31 +1,33 @@
 # Smart-Code-vulnerablilty-Triage-System
 
-# SecureScan — Demo Cyber Threat Analysis (Client + FastAPI backend)
+# SecureScan — Cyber Threat Analysis (Frontend + FastAPI backend)
 
-**SecureScan** is a single-file front-end demo for client-side vulnerability detection (regex + JS AST via Esprima) with a small FastAPI backend for server-side scanning. This repo contains:
+SecureScan is a browser-based vulnerability scanner UI paired with a FastAPI backend for server-side scanning. The frontend performs client-side heuristics (regex + JavaScript AST via Esprima) and the backend accepts uploaded source files and returns structured findings that the UI renders.
 
-- `frontend/` — (or single `index.html`) the SecureScan UI (drag & drop, AI console, scanner).
+## Repo layout
+- `index.html` (or `frontend/`) — SecureScan UI (drag & drop, AI console, scanner).
 - `app.py` — FastAPI backend that accepts file uploads at `POST /scan` and returns findings.
-- `docker-compose.yml` — local demo with backend and static frontend serving.
-- `.github/workflows/ci.yml` — lightweight CI that checks Python lint and endpoint availability.
-
-> ⚠️ **This project is a demo / proof-of-concept** — not production-ready. Do not upload real secrets. The backend uses simple heuristics; replace with real SAST tools (Semgrep, Bandit, CodeQL) for production.
+- `.github/workflows/ci.yml` — lightweight CI (optional).
+- `vulnerable_test.js` — (optional) a test file that triggers scanner rules.
 
 ---
 
-## Quick demo (local, minimal)
+## Quick start (local)
 
 ### Prerequisites
-- Python 3.9+ (recommended)
-- pip
-- git
-- (optional) Docker & docker-compose
+- Python 3.9+  
+- `pip`  
+- `git` (optional, for cloning)
 
 ### 1) Clone & install
 ```bash
 git clone <your-repo-url>
 cd <repo-folder>
 python -m venv .venv
-source .venv/bin/activate        # Linux / macOS
-.venv\Scripts\activate           # Windows (PowerShell)
-pip install -r requirements.txt  # or: pip install fastapi uvicorn python-multipart
+# Activate virtualenv:
+# Linux / macOS:
+source .venv/bin/activate
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+pip install fastapi uvicorn python-multipart aiofiles
