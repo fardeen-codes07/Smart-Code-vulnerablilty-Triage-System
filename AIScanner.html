@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>SecureScan - Cyber Threat Analysis Interface (AI Assisted)</title>
+    <style>
+        :root {
+            --primary: #0a0e17;
+            --secondary: #00d9ff;
+            --accent: #7e42ff;
+            --danger: #ff2a6d;
+            --warning: #ffcc00;
+            --success: #00ff9d;
+            --dark: #050813;
+            --terminal-text: #c8fefc;
+            --terminal-bg: rgba(2, 12, 27, 0.85);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Orbitron', 'Share Tech Mono', monospace; }
+        body { 
+            background-color:var(--dark); 
+            color:var(--terminal-text); 
+            line-height:1.6;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(28, 117, 223, 0.13) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(126, 66, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 80%, rgba(0, 217, 255, 0.1) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+        .container{ max-width:1200px; margin:0 auto; padding:20px; }
+        header{ 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+            color: var(--terminal-text);
+            padding:2rem; 
+            text-align:center; 
+            border-radius:10px; 
+            margin-bottom:30px; 
+            box-shadow:0 0 25px rgba(0, 217, 255, 0.3);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--secondary), var(--accent), var(--secondary));
+            animation: scanline 3s linear infinite;
+        }
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        h1{ 
+            margin-bottom:10px; 
+            font-size:2.2rem; 
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.7);
+            letter-spacing: 1px;
+        }
+        .subtitle{ 
+            color: var(--secondary); 
+            font-weight:300; 
+            font-size:1.05rem; 
+            letter-spacing: 0.5px;
+        }
+        .upload-section{ 
+            background: var(--terminal-bg);
+            padding:24px; 
+            border-radius:10px; 
+            box-shadow:0 0 20px rgba(0, 217, 255, 0.2);
+            margin-bottom:20px; 
+            text-align:center;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        .drop-zone{ 
+            border: 2px dashed var(--secondary);
+            border-radius:10px; 
+            padding:28px 20px; 
+            margin:18px 0; 
+            cursor:pointer; 
+            transition:all .3s;
+            background: rgba(2, 12, 27, 0.5);
+            position: relative;
+        }
+        .drop-zone:hover{ 
+            background-color:rgba(0, 217, 255, 0.05); 
+            transform:translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        }
+        .drop-zone.dragover{ 
+            background-color:rgba(0, 217, 255, 0.1); 
+            border-color:var(--accent); 
+            transform:scale(1.01);
+            box-shadow: 0 0 20px rgba(126, 66, 255, 0.4);
+        }
+        .drop-zone i{ 
+            font-size:2.6rem; 
+            color:var(--secondary); 
+            margin-bottom:12px; 
+            display:block; 
+            text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
+        }
+        .file-input{ display:none; }
+        .browse-btn{ 
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+            color: var(--dark);
+            padding:10px 18px; 
+            border:none; 
+            border-radius:4px; 
+            cursor:pointer; 
+            font-size:1rem; 
+            margin-top:10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+        }
+        .browse-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+        }
+        .scan-btn{ 
+            background: linear-gradient(135deg, var(--success) 0%, #00cc7a 100%);
+            color: var(--dark);
+            padding:12px 28px; 
+            border:none; 
+            border-radius:4px; 
+            cursor:pointer; 
+            font-size:1rem; 
+            margin-top:16px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
+        }
+        .scan-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+        }
+        .scan-btn:disabled{ 
+            background:#2a3549; 
+            color: #55657c;
+            cursor:not-allowed;
+            box-shadow: none;
+        }
+        .file-list{ margin-top:18px; text-align:left; }
+        .file-item{ 
+            display:flex; 
+            justify-content:space-between; 
+            align-items:center; 
+            padding:10px 12px; 
+            background:rgba(2, 12, 27, 0.7); 
+            margin-bottom:10px; 
+            border-radius:6px;
+            border-left: 3px solid var(--secondary);
+        }
+        .file-name{ font-weight:500; display:flex; align-items:center; }
+        .file-name i{ margin-right:10px; color:var(--secondary); }
+        .file-size{ color:#7f8c8d; font-size:0.9rem; }
+        .loading{ display:none; text-align:center; margin:20px 0; }
+        .spinner{ 
+            border:4px solid rgba(0,0,0,0.08); 
+            border-left:4px solid var(--secondary); 
+            border-radius:50%; 
+            width:36px; 
+            height:36px; 
+            animation:spin 1s linear infinite; 
+            margin:0 auto 12px; 
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+        @keyframes spin{ 0%{ transform:rotate(0deg) } 100%{ transform:rotate(360deg) } }
+        .results-section{ 
+            display:none; 
+            background:var(--terminal-bg); 
+            padding:22px; 
+            border-radius:10px; 
+            box-shadow:0 0 20px rgba(0, 217, 255, 0.2);
+            margin-bottom:20px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        .vulnerability-list{ list-style:none; margin-top:12px; }
+        .vulnerability-item{ 
+            padding:14px; 
+            margin-bottom:12px; 
+            border-radius:8px; 
+            background:rgba(2, 12, 27, 0.7);
+            box-shadow:0 3px 8px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--warning);
+            transition: all 0.3s;
+        }
+        .vulnerability-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .vulnerability-item.critical{ border-left-color:var(--danger); }
+        .vulnerability-item.high{ border-left-color:var(--warning); }
+        .vulnerability-item.medium{ border-left-color:var(--accent); }
+        .vulnerability-item.low{ border-left-color:var(--success); }
+        .vuln-title{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+        .vuln-type{ font-weight:700; font-size:1.05rem; }
+        .vuln-severity{ padding:6px 10px; border-radius:18px; font-size:0.85rem; font-weight:700; }
+        .severity-critical{ background-color:rgba(255, 42, 109, 0.15); color:var(--danger); }
+        .severity-high{ background-color:rgba(255, 204, 0, 0.15); color:var(--warning); }
+        .severity-medium{ background-color:rgba(126, 66, 255, 0.15); color:var(--accent); }
+        .severity-low{ background-color:rgba(0, 255, 157, 0.15); color:var(--success); }
+        .vuln-location{ color:#8ca0b4; margin-bottom:8px; font-size:0.95rem; }
+        .vuln-description{ margin-bottom:10px; line-height:1.4; }
+        .vuln-remediation{ 
+            background:rgba(2, 12, 27, 0.9); 
+            padding:10px; 
+            border-radius:6px; 
+            font-size:0.95rem; 
+            border-left:4px solid var(--secondary);
+        }
+        footer{ 
+            text-align:center; 
+            margin-top:30px; 
+            color:#6b7b8f; 
+            font-size:0.95rem; 
+            padding:12px; 
+            border-top:1px solid rgba(0, 217, 255, 0.2);
+        }
+        .alert{ 
+            padding:12px 16px; 
+            margin-bottom:12px; 
+            border-radius:8px; 
+            display:none;
+            border-left: 4px solid;
+            background: var(--terminal-bg);
+        }
+        .alert-error{ 
+            background:rgba(255, 42, 109, 0.1); 
+            color:var(--danger); 
+            border-color:var(--danger);
+        }
+        .alert-success{ 
+            background:rgba(0, 255, 157, 0.1); 
+            color:var(--success); 
+            border-color:var(--success);
+        }
+        .stats{ display:flex; justify-content:space-around; margin:12px 0; flex-wrap:wrap; }
+        .stat-box{ 
+            background:var(--terminal-bg); 
+            padding:12px; 
+            border-radius:8px; 
+            text-align:center; 
+            min-width:140px; 
+            margin:8px; 
+            box-shadow:0 3px 8px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
+            z-index: 0;
+        }
+        .stat-value{ 
+            font-size:1.6rem; 
+            font-weight:700; 
+            margin-top:6px;
+            text-shadow: 0 0 8px currentColor;
+            position: relative;
+        }
+        #criticalCount { color: var(--danger); }
+        #highCount { color: var(--warning); }
+        #mediumCount { color: var(--accent); }
+        #lowCount { color: var(--success); }
+        @media (max-width:768px){ 
+            .container{ padding:12px } 
+            header{ padding:1.2rem } 
+            h1{ font-size:1.6rem } 
+            .upload-section,.results-section{ padding:14px } 
+            .stats{ flex-direction:column }
+        }
+
+        /* Sci-fi elements */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(0, 217, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 217, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: -2;
+        }
+        .glow {
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        /* AI console styles */
+        .ai-console {
+            margin-top:14px;
+            background: rgba(0,0,0,0.5);
+            padding:12px;
+            border-radius:8px;
+            text-align:left;
+            font-size:0.95rem;
+            color: #bfeffd;
+            max-height:140px;
+            overflow:auto;
+            border: 1px solid rgba(0,217,255,0.12);
+        }
+        .ai-line { margin-bottom:6px; }
+        .ai-badge { font-weight:700; padding:2px 8px; border-radius:12px; background: rgba(0,0,0,0.3); margin-right:8px; }
+        .toggle { display:inline-flex; align-items:center; gap:8px; }
+        .switch { position: relative; width:44px; height:24px; background: #2b394f; border-radius:999px; cursor:pointer; }
+        .switch::after { content:''; position:absolute; width:18px; height:18px; background:#cfeffd; border-radius:50%; top:3px; left:3px; transition:all .2s; }
+        .switch.on { background: linear-gradient(90deg,var(--secondary),var(--accent)); }
+        .switch.on::after { left:23px; }
+
+    </style>
+
+    <!-- Esprima for JS AST parsing (client-side) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/esprima/4.0.1/esprima.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="grid-overlay"></div>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-satellite-dish"></i> SecureScan</h1>
+            <p class="subtitle">CYBER THREAT ANALYSIS INTERFACE — REGEX + JS AST DETECTION MATRIX</p>
+        </header>
+
+        <div class="alert" id="alertBox"></div>
+
+        <section class="upload-section">
+            <h2>UPLOAD SOURCE CODE FOR ANALYSIS</h2>
+            <p>SUPPORTED FORMATS: .js, .java, .py, .php, .html, .css, .xml, .json, .txt</p>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:260px;">
+                    <div class="drop-zone" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>DRAG & DROP FILES HERE OR</p>
+                        <input type="file" id="fileInput" class="file-input" multiple accept=".js,.java,.py,.php,.html,.css,.xml,.json,.txt">
+                        <button class="browse-btn" id="browseBtn">BROWSE FILES</button>
+                    </div>
+
+                    <div class="file-list" id="fileList"></div>
+                </div>
+
+                <div style="min-width:260px;">
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                        <div class="toggle">
+                            <span style="color:#9bdff6; font-weight:600;">AI-assisted scan</span>
+                            <div id="aiSwitch" class="switch on" title="Toggle AI assistance"></div>
+                        </div>
+                        <button class="scan-btn" id="scanBtn" disabled>INITIATE SECURITY SCAN</button>
+
+                        <div style="width:100%; margin-top:12px; text-align:left;">
+                            <div style="font-size:0.9rem; color:#9bdff6; font-weight:600;">AI ENGINE: <span id="aiName">Sentinel</span></div>
+                            <div style="font-size:0.85rem; color:#7fabb8;">Mode: <span id="aiMode">Client-side heuristics + AI assistant (mock)</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingMain">ANALYZING CODE FOR VULNERABILITIES...</p>
+
+            <!-- AI console shows AI progress/messages while keeping the existing output identical -->
+            <div class="ai-console" id="aiConsole" aria-live="polite" style="display:none;">
+                <!-- lines appended here -->
+            </div>
+        </div>
+
+        <section class="results-section" id="resultsSection">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2>SCAN RESULTS</h2>
+                <div id="vulnCount" style="font-weight:700; color:var(--secondary)">0 VULNERABILITIES DETECTED</div>
+            </div>
+
+            <div class="stats" id="statsContainer">
+                <div class="stat-box">
+                    <div>CRITICAL</div>
+                    <div class="stat-value" id="criticalCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div>HIGH</div>
+                    <div class="stat-value" id="highCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div>MEDIUM</div>
+                    <div class="stat-value" id="mediumCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div>LOW</div>
+                    <div class="stat-value" id="lowCount">0</div>
+                </div>
+            </div>
+
+            <ul class="vulnerability-list" id="vulnerabilityList"></ul>
+        </section>
+
+        <footer>
+            <p>SECURESCAN - DEMO CLIENT-SIDE VULNERABILITY DETECTION MATRIX. NOT A REPLACEMENT FOR SERVER-SIDE SCANNING SYSTEMS.</p>
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create particle effect
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 40; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = '2px';
+                particle.style.height = '2px';
+                particle.style.background = 'rgba(0, 217, 255, 0.7)';
+                particle.style.boxShadow = '0 0 10px 2px rgba(0, 217, 255, 0.5)';
+                particle.style.borderRadius = '50%';
+                
+                // Random position
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                
+                container.appendChild(particle);
+                
+                // Animate
+                animateParticle(particle);
+            }
+        }
+        
+        function animateParticle(particle) {
+            const duration = 3 + Math.random() * 10;
+            const xMove = (Math.random() - 0.5) * 100;
+            const yMove = (Math.random() - 0.5) * 100;
+            
+            const keyframes = [
+                { 
+                    transform: 'translate(0, 0)',
+                    opacity: 0
+                },
+                { 
+                    transform: `translate(${xMove}px, ${yMove}px)`,
+                    opacity: 1
+                },
+                { 
+                    transform: `translate(${xMove * 2}px, ${yMove * 2}px)`,
+                    opacity: 0
+                }
+            ];
+            
+            const options = {
+                duration: duration * 1000,
+                iterations: Infinity
+            };
+            
+            particle.animate(keyframes, options);
+        }
+        
+        createParticles();
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const scanBtn = document.getElementById('scanBtn');
+        const fileList = document.getElementById('fileList');
+        const loading = document.getElementById('loading');
+        const resultsSection = document.getElementById('resultsSection');
+        const vulnerabilityList = document.getElementById('vulnerabilityList');
+        const vulnCount = document.getElementById('vulnCount');
+        const alertBox = document.getElementById('alertBox');
+        const criticalCount = document.getElementById('criticalCount');
+        const highCount = document.getElementById('highCount');
+        const mediumCount = document.getElementById('mediumCount');
+        const lowCount = document.getElementById('lowCount');
+        const aiConsole = document.getElementById('aiConsole');
+        const loadingMain = document.getElementById('loadingMain');
+        const aiSwitch = document.getElementById('aiSwitch');
+        const aiName = document.getElementById('aiName');
+        const aiMode = document.getElementById('aiMode');
+
+        let uploadedFiles = [];
+        let aiEnabled = true; // default ON
+
+        // --------- Patterns (regex) ----------
+        const SECRET_PATTERNS = [
+            { name: "Hardcoded API Key", regex: /\b(api[_-]?key|client[_-]?secret|secret[_-]?key)\s*[:=]\s*['"][A-Za-z0-9\-\._\/\+]{8,}['"]/i, severity: "critical",
+              desc: "Possible hardcoded API key or secret detected.", rem: "Move secrets to environment variables or secret store." },
+            { name: "AWS Access Key", regex: /\bAKIA[0-9A-Z]{16}\b/, severity: "critical",
+              desc: "Possible AWS access key pattern found.", rem: "Rotate key and use IAM roles or env vars." },
+            { name: "Private Key PEM", regex: /-----BEGIN (RSA|OPENSSL|PRIVATE) KEY-----/i, severity: "critical",
+              desc: "Private key material detected.", rem: "Remove private keys and store securely." },
+            { name: "Hardcoded Password", regex: /\b(password|pwd)\s*[:=]\s*['"][^'\"]{4,}['"]/i, severity: "critical",
+              desc: "Hardcoded password detected.", rem: "Use environment variables or a vault." },
+        ];
+
+        const SQL_LIKE = [
+            { name: "Concatenated SQL", regex: /(["'`].*SELECT.*FROM.*["'`]\s*\+|\bexecute\([^)]*["'`].*SELECT.*FROM.*\+|\bfstring:.*SELECT.*FROM)/i, severity: "high",
+              desc: "Possible SQL built by concatenation or template with variables.", rem: "Use parameterized queries / prepared statements." }
+        ];
+
+        const XSS_LIKE = [
+            { name: "DOM write (dangerous)", regex: /\b(document\.write|innerHTML\s*=\s*|outerHTML\s*=\s*|insertAdjacentHTML\s*\()/i, severity: "high",
+              desc: "Possible unsafe DOM write detected.", rem: "Sanitize input and prefer textContent or safe templating." }
+        ];
+
+        const GENERIC = [
+            { name: "Eval or Exec (generic)", regex: /\b(eval|exec|execfile)\s*\(/i, severity: "high",
+              desc: "Use of eval/exec detected.", rem: "Avoid eval/exec; use safer alternatives." }
+        ];
+
+        // ------- UI event wiring ----------
+        browseBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+
+        scanBtn.addEventListener('click', startScan);
+        aiSwitch.addEventListener('click', () => toggleAI());
+
+        function toggleAI() {
+            aiEnabled = !aiEnabled;
+            aiSwitch.classList.toggle('on', aiEnabled);
+            aiMode.textContent = aiEnabled ? 'Client-side heuristics + AI assistant (mock)' : 'Client-side heuristics (AI off)';
+            showAlert('AI-assisted scan ' + (aiEnabled ? 'enabled' : 'disabled'), 'success');
+        }
+
+        function showAlert(message, type='error') {
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type}`;
+            alertBox.style.display = 'block';
+            setTimeout(()=> alertBox.style.display='none', 4500);
+        }
+
+        function handleFileSelect(e) { handleFiles(e.target.files); }
+
+        function handleFiles(files) {
+            for (let i=0;i<files.length;i++) {
+                const file = files[i];
+                if (uploadedFiles.some(f => f.name === file.name && f.size === file.size)) continue;
+                const extension = file.name.split('.').pop().toLowerCase();
+                const allowed = ['js','java','py','php','html','css','xml','json','txt'];
+                if (!allowed.includes(extension)) { showAlert(`Not supported: ${file.name}`); continue; }
+                uploadedFiles.push(file);
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `<span class="file-name"><i class="fas fa-file-code"></i> ${file.name}</span><span class="file-size">${formatFileSize(file.size)}</span>`;
+                fileList.appendChild(fileItem);
+            }
+            scanBtn.disabled = uploadedFiles.length === 0;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes+' bytes';
+            else if (bytes < 1048576) return (bytes/1024).toFixed(1)+' KB';
+            else return (bytes/1048576).toFixed(1)+' MB';
+        }
+
+        // ---------- Main scan flow ----------
+        function startScan() {
+            if (uploadedFiles.length === 0) { showAlert('Upload files first','error'); return; }
+            loading.style.display = 'block';
+            aiConsole.style.display = aiEnabled ? 'block' : 'none';
+            resultsSection.style.display = 'none';
+            vulnerabilityList.innerHTML = '';
+            scanBtn.disabled = true;
+            aiConsole.innerHTML = '';
+            loadingMain.textContent = aiEnabled ? 'SENTINEL AI: INITIATING CODE INTELLIGENCE & HEURISTIC SCAN...' : 'ANALYZING CODE FOR VULNERABILITIES...';
+
+            // read all files
+            Promise.all(uploadedFiles.map(f => fileToText(f).then(txt => ({ file: f, text: txt })) ))
+                .then(fileObjs => {
+                    // If AI enabled, run a mock AI 'progress' display while still using same detection logic.
+                    if (aiEnabled) {
+                        runMockAiProgress(fileObjs).then(() => {
+                            const allFindings = runDetections(fileObjs);
+                            loading.style.display = 'none';
+                            displayResults(allFindings);
+                        }).catch(err => {
+                            loading.style.display = 'none';
+                            showAlert('AI scan failed: ' + String(err), 'error');
+                            scanBtn.disabled = false;
+                        });
+                    } else {
+                        const allFindings = runDetections(fileObjs);
+                        loading.style.display = 'none';
+                        displayResults(allFindings);
+                    }
+                })
+                .catch(err => {
+                    loading.style.display = 'none';
+                    showAlert('Error reading files: ' + String(err), 'error');
+                    scanBtn.disabled = false;
+                });
+        }
+
+        function fileToText(file) {
+            return new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(String(r.result));
+                r.onerror = () => reject(r.error);
+                r.readAsText(file);
+            });
+        }
+
+        // ---------- Mock AI progress UI (does NOT change detection results) ----------
+        function runMockAiProgress(fileObjs) {
+            return new Promise((resolve) => {
+                // Simulate AI streaming messages into the aiConsole
+                const messages = [];
+                messages.push({t: 300, txt: 'Sentinel: loading model weights (client-side emulation)...'});
+                messages.push({t: 1200, txt: `Sentinel: enumerating ${fileObjs.length} file(s) for deep pattern analysis...`} );
+                messages.push({t: 2200, txt: 'Sentinel: extracting tokens & AST signatures from JavaScript files...'});
+                messages.push({t: 3200, txt: 'Sentinel: cross-referencing regex matches with heuristic signatures...'});
+                messages.push({t: 4200, txt: 'Sentinel: prioritizing potential vulnerabilities by confidence score...'});
+                messages.push({t: 5200, txt: 'Sentinel: preparing consolidated findings (read-only preview)...'});
+
+                // Append an initial line explaining this is a client-side AI simulation
+                appendAiLine('SYSTEM', 'AI assistant running in local emulation mode — not calling external services.');
+
+                let i = 0;
+                function step() {
+                    if (i >= messages.length) {
+                        appendAiLine('Sentinel', 'Analysis complete. Passing results to scanner...');
+                        setTimeout(resolve, 500);
+                        return;
+                    }
+                    const m = messages[i++];
+                    setTimeout(() => { appendAiLine('Sentinel', m.txt.replace(/^Sentinel:\s*/i, '')); step(); }, m.t);
+                }
+                step();
+            });
+        }
+
+        function appendAiLine(who, text) {
+            const line = document.createElement('div');
+            line.className = 'ai-line';
+            line.innerHTML = `<span class="ai-badge">${escapeHtml(who)}</span> ${escapeHtml(text)}`;
+            aiConsole.appendChild(line);
+            aiConsole.scrollTop = aiConsole.scrollHeight;
+        }
+
+        // ---------- Detection logic (kept identical to original; AI only affects UI) ----------
+        function runDetections(fileObjs) {
+            const allFindings = [];
+            for (const fo of fileObjs) {
+                const ext = fo.file.name.split('.').pop().toLowerCase();
+                const findings = analyzeContent(fo.file.name, fo.text, ext);
+                findings.forEach(x => allFindings.push(x));
+            }
+            return allFindings;
+        }
+
+        function analyzeContent(filename, text, ext) {
+            const findings = [];
+
+            // 1) Generic regex checks (secrets, SQL-like, XSS-like, eval)
+            const checks = [...SECRET_PATTERNS, ...SQL_LIKE, ...XSS_LIKE, ...GENERIC];
+            checks.forEach(c => {
+                const match = c.regex.exec(text);
+                if (match) {
+                    const line = getLineNumber(text, match.index);
+                    findings.push({
+                        type: c.name,
+                        severity: c.severity,
+                        file: filename,
+                        line: line,
+                        description: c.desc || 'Pattern matched',
+                        remediation: c.rem || 'Review and remediate'
+                    });
+                }
+            });
+
+            // 2) Language-specific heuristics
+            if (ext === 'js') {
+                // AST-based checks using Esprima
+                try {
+                    const ast = esprima.parseScript(text, { loc: true, tolerant: true });
+                    // traverse nodes
+                    traverseAST(ast, node => {
+                        // eval() call
+                        if (node.type === 'CallExpression' && node.callee && node.callee.type === 'Identifier' && node.callee.name === 'eval') {
+                            findings.push({
+                                type: 'Use of eval()',
+                                severity: 'critical',
+                                file: filename,
+                                line: node.loc ? node.loc.start.line : '-',
+                                description: 'eval() invocation detected; dynamic code execution is risky.',
+                                remediation: 'Avoid eval(); use safer parsing or functions.'
+                            });
+                        }
+                        // assignment to innerHTML
+                        if (node.type === 'AssignmentExpression' && node.left && node.left.type === 'MemberExpression' && node.left.property && node.left.property.type === 'Identifier' && node.left.property.name === 'innerHTML') {
+                            findings.push({
+                                type: 'innerHTML assignment',
+                                severity: 'high',
+                                file: filename,
+                                line: node.loc ? node.loc.start.line : '-',
+                                description: 'Assignment to innerHTML detected; could enable XSS if value is untrusted.',
+                                remediation: 'Sanitize inputs or use textContent/escaping.'
+                            });
+                        }
+                        // document.write
+                        if (node.type === 'CallExpression' && node.callee && node.callee.type === 'MemberExpression' && node.callee.property && node.callee.property.name === 'write') {
+                            // e.g., document.write(...)
+                            findings.push({
+                                type: 'document.write usage',
+                                severity: 'high',
+                                file: filename,
+                                line: node.loc ? node.loc.start.line : '-',
+                                description: 'document.write detected; avoid writing raw user data to DOM.',
+                                remediation: 'Use safe DOM APIs and sanitize data.'
+                            });
+                        }
+                    });
+                } catch (err) {
+                    // parsing errors — record parse error but don't block
+                    findings.push({
+                        type: 'JS parse error',
+                        severity: 'low',
+                        file: filename,
+                        line: '-',
+                        description: 'Esprima failed to parse the file (possible syntax not supported).',
+                        remediation: 'Check file syntax or process server-side for advanced parsing.'
+                    });
+                }
+            } else if (ext === 'py') {
+                // lightweight Python heuristics via regex (client-side cannot AST-parse Python easily)
+                // detect suspicious concatenation in execute-like calls
+                const pySqlRegex = /\bexecute\([^)]*['"].*(\+|%|\{).*['"]\)/i;
+                const pyEvalRegex = /\b(eval|exec)\s*\(/i;
+                if (pySqlRegex.test(text)) {
+                    const m = pySqlRegex.exec(text);
+                    findings.push({
+                        type: 'Python: possible SQL concatenation',
+                        severity: 'high',
+                        file: filename,
+                        line: getLineNumber(text, m.index),
+                        description: 'execute() called with string concatenation/formatting — possible SQL injection.',
+                        remediation: 'Use parameterized queries.'
+                    });
+                }
+                if (pyEvalRegex.test(text)) {
+                    const m = pyEvalRegex.exec(text);
+                    findings.push({
+                        type: 'Python: eval/exec usage',
+                        severity: 'high',
+                        file: filename,
+                        line: getLineNumber(text, m.index),
+                        description: 'eval/exec detected.',
+                        remediation: 'Avoid eval/exec; use safer constructs.'
+                    });
+                }
+            } else if (ext === 'php' || ext === 'java' || ext === 'html') {
+                // simple additional checks via regex already covered by SQL_LIKE / XSS_LIKE / GENERIC
+                // for html, also look for on* handlers (inline events)
+                if (ext === 'html') {
+                    const onEvent = text.match(/\son\w+\s*=/i);
+                    if (onEvent) {
+                        findings.push({
+                            type: 'Inline event handler',
+                            severity: 'medium',
+                            file: filename,
+                            line: getLineNumber(text, onEvent.index),
+                            description: 'Inline on* event handler detected in HTML (possible JS execution).',
+                            remediation: 'Prefer unobtrusive event binding and sanitize content.'
+                        });
+                    }
+                }
+            }
+
+            // deduplicate near-identical findings (by type+file+line)
+            const unique = [];
+            const seen = new Set();
+            for (const f of findings) {
+                const key = `${f.type}::${f.file}::${f.line}`;
+                if (!seen.has(key)) { seen.add(key); unique.push(f); }
+            }
+            return unique;
+        }
+
+        // small AST walker for Esprima AST
+        function traverseAST(node, visitor) {
+            visitor(node);
+            for (const key in node) {
+                if (!node.hasOwnProperty(key)) continue;
+                const child = node[key];
+                if (Array.isArray(child)) {
+                    for (const c of child) {
+                        if (c && typeof c.type === 'string') traverseAST(c, visitor);
+                    }
+                } else if (child && typeof child.type === 'string') {
+                    traverseAST(child, visitor);
+                }
+            }
+        }
+
+        function getLineNumber(text, idx) {
+            if (idx === undefined || idx < 0) return '-';
+            return text.slice(0, idx).split('\n').length;
+        }
+
+        // ---------- Display ----------
+        function displayResults(vulns) {
+            vulnerabilityList.innerHTML = '';
+            vulnCount.textContent = `${vulns.length} VULNERABILIT${vulns.length === 1 ? 'Y' : 'IES'} DETECTED`;
+
+            const severityCount = { critical:0, high:0, medium:0, low:0 };
+            vulns.forEach(v => {
+                const sev = (v.severity || 'low').toLowerCase();
+                if (sev === 'critical') severityCount.critical++;
+                else if (sev === 'high') severityCount.high++;
+                else if (sev === 'medium') severityCount.medium++;
+                else severityCount.low++;
+            });
+            criticalCount.textContent = severityCount.critical;
+            highCount.textContent = severityCount.high;
+            mediumCount.textContent = severityCount.medium;
+            lowCount.textContent = severityCount.low;
+
+            if (vulns.length === 0) {
+                showAlert('NO VULNERABILITIES DETECTED! (CLIENT-SIDE HEURISTICS)', 'success');
+            } else {
+                showAlert(`SCAN COMPLETED. FOUND ${vulns.length} POTENTIAL VULNERABILITIES.`, 'success');
+            }
+
+            // Add each vulnerability
+            for (const vuln of vulns) {
+                const li = document.createElement('li');
+                li.className = `vulnerability-item ${ (vuln.severity || 'low').toLowerCase() }`;
+                li.innerHTML = `
+                    <div class="vuln-title">
+                        <span class="vuln-type">${escapeHtml(vuln.type)}</span>
+                        <span class="vuln-severity severity-${(vuln.severity || 'low').toLowerCase()}">${(vuln.severity || 'low').toUpperCase()}</span>
+                    </div>
+                    <div class="vuln-location"><i class="fas fa-file"></i> File: ${escapeHtml(vuln.file)} | Line: ${escapeHtml(String(vuln.line))}</div>
+                    <div class="vuln-description">${escapeHtml(vuln.description || '')}</div>
+                    <div class="vuln-remediation"><strong>REMEDIATION:</strong> ${escapeHtml(vuln.remediation || '')}</div>
+                `;
+                vulnerabilityList.appendChild(li);
+            }
+
+            resultsSection.style.display = 'block';
+            scanBtn.disabled = false;
+        }
+
+        function escapeHtml(s) {
+            if (!s) return '';
+            return s.replace(/[&<>"'`]/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;', '`':'&#96;'})[m]; });
+        }
+
+    }); // DOMContentLoaded end
+    </script>
+</body>
+</html>
