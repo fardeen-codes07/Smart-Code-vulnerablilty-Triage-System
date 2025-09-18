@@ -1,4 +1,4 @@
-##SecureScan 
+#SecureScan 
 
 SecureScan is a self-contained browser UI for client-side static code scanning.
 This repository (or file) contains a single HTML file that implements a polished UI, simple client-side scanners (regex + JavaScript AST via Esprima), and a mock AI progress console. It is intended to run entirely in the browser — no backend required to use the scanner UI.
