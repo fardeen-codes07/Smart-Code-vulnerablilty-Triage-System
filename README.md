@@ -36,9 +36,9 @@ Open it in a modern browser (Chrome/Edge/Firefox):
 
 Double-click index.html or drag it into a browser window.
 
-For best results and to test file uploads reliably, serve it via a static host (optional):
+For best results and to test file uploads reliably, serve it via a static host :
 
-# simple Python static server (optional)
+# simple Python static server 
 python -m http.server 8080
 # then open http://localhost:8080/index.html
 
@@ -111,7 +111,7 @@ The "AI console" simulates an AI assistant (messages like "Sentinel: extracting 
 
 This is a client-side simulation to show staged progress — it does not call external AI services or change detection logic. The scanner's findings come from the local heuristics and AST checks.
 
-Limitations & notes (important)
+Limitations & notes 
 
 This is a client-side demo using heuristics. It is intended for triage and demo purposes only.
 
